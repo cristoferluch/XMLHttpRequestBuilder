@@ -1,113 +1,109 @@
 class HTTPRequestBuilder {
   constructor() {
-    this.xhr = new XMLHttpRequest();
-    this.url = "";
-    this.method = "";
-    this.body = "";
-    this.timeout = 0;
-    this.headers = {};
-    this.params = {};
+      this._xhr = new XMLHttpRequest();
+      this._url = "";
+      this._method = "GET";
+      this._body = "";
+      this._timeout = 0;
+      this._headers = {};
+      this._params = {};
   }
 
-  setUrl(url) {
-    this.url = url;
-    return this;
+  url(url) {
+      this._url = url;
+      return this;
   }
 
-  setMethod(method) {
-    this.method = method.toUpperCase();
-    return this;
+  method(method) {
+      this._method = method.toUpperCase();
+      return this;
   }
 
-  setBody(body) {
-    this.body = body;
-    return this;
+  body(body) {
+      this._body = body;
+      return this;
   }
 
-  setTimeout(timeout) {
-    this.timeout = timeout;
-    return this;
+  timeout(timeout) {
+      this._timeout = timeout;
+      return this;
   }
 
-  setHeader(key, value) {
-    this.headers[key] = value;
-    return this;
+  header(key, value) {
+      this._headers[key] = value;
+      return this;
   }
 
-  setParams(params) {
-    this.params = params;
-    return this;
+  params(params) {
+      this._params = params;
+      return this;
   }
 
   send() {
-    const methods = [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "HEAD",
-      "OPTIONS",
-    ];
+      const methods = [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE",
+          "HEAD",
+          "OPTIONS",
+      ];
 
-    if (!this.url) {
-      throw new Error("URL is required");
-    }
-
-    if (!this.method) {
-      throw new Error("Method is required");
-    }
-
-    if (!methods.includes(this.method)) {
-      throw new Error("Method not allowd");
-    }
-
-    const url = new URL(this.url);
-
-    Object.entries(this.params).forEach(([key, value]) => {
-      if (key !== null && value !== undefined) {
-        url.searchParams.set(key, value);
+      if (!this._url) {
+          throw new Error("URL is required");
       }
-    });
 
-    this.xhr.open(this.method, url);
+      if (!this._method) {
+          throw new Error("Method is required");
+      }
 
-    Object.entries(this.headers).forEach(([key, value]) => {
-      this.xhr.setRequestHeader(key, value);
-    });
+      if (!methods.includes(this._method)) {
+          throw new Error("Method not allowd");
+      }
 
-    if (this.timeout != 0) {
-      this.xhr.timeout = this.timeout;
-    }
+      const url = new URL(this._url);
 
-    return new Promise((resolve, reject) => {
-      this.xhr.onload = () => {
-        if (this.xhr.status == 200) {
-          resolve(this.xhr);
-        } else {
-          reject(new Error("Request failed"));
-        }
-      };
+      Object.entries(this._params).forEach(([key, value]) => {
+          if (key !== null && value !== undefined) {
+              url.searchParams.append(key, value);
+          }
+      });
 
-      this.xhr.onerror = () => {
-        reject(new Error("Request failed"));
-      };
+      this._xhr.open(this._method, url);
 
-      this.xhr.ontimeout = () => {
-        reject(new Error("Request timed out"));
-      };
+      Object.entries(this._headers).forEach(([key, value]) => {
+          if (key !== null && value != undefined) {
+              this._xhr.setRequestHeader(key, value);
+          }
+      });
 
-      this.xhr.send(this.body || null);
-    });
+      if (this._timeout != 0) {
+          this._xhr.timeout = this._timeout;
+      }
+
+      return new Promise((resolve, reject) => {
+          this._xhr.onload = () => {
+              if (this._xhr.status == 200) {
+                  resolve(this._xhr);
+              } else {
+                  reject(this._xhr);
+              }
+          };
+
+          this._xhr.onerror = () => {
+              reject(this._xhr);
+          };
+
+          this._xhr.ontimeout = () => {
+              reject(this._xhr);
+          };
+
+          this._xhr.send(
+              typeof this._body === "string"
+                  ? this._body
+                  : JSON.stringify(this._body),
+          );
+      });
   }
 }
-
-const request = await new HTTPRequestBuilder()
-  .setUrl("https://pokeapi.co/api/v2/pokemon")
-  .setMethod("GET")
-  .setHeader("Accept", "application/json")
-  .setParams({ limit: 100, offset: 2 })
-  .setTimeout(2000)
-  .send();
-
-console.log(JSON.parse(request.response));
